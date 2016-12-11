@@ -67,7 +67,7 @@ textmining = function(file)
   tbl1 = tbl1[-index,]
   
   tbl2 = tbl1 %>% arrange(desc(values))
-  return tbl2
+  return(tbl2)
 }
 ```
 
