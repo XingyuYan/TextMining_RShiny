@@ -1,0 +1,12 @@
+---
+title: "523Final"
+author: Group 9
+output: html_document
+---
+
+## Text mining
+
+```{r}
+
+
+```
