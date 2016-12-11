@@ -7,6 +7,76 @@ output: html_document
 ## Text mining
 
 ```{r}
+library(purrr)
+library(magrittr)
+library(stringr)
+library(dplyr)
+library(tm)
+
+textmining = function(file)
+{
+  # testing file : "/data/Shakespeare/hamlet.txt"
+  data = readLines(file) %>% as.list()
+  
+  # Map step
+  map_count_words = function(val)
+  {
+    stopifnot(length(val) == 1)
+    
+    val = gsub("[[:punct:]]", " ", val)
+    val = gsub("[[:digit:]]+", " ", val)
+    val %>%
+      tolower() %>%
+      str_split(" ") %>%
+      {.[[1]]} %>%
+      str_trim() %>%
+      .[. != ""] %>%
+      .[! . %in% stopwords("en")] %>%
+      table() %>% 
+      as.list()
+  }
+  
+  res_map = lapply(data, map_count_words) %>% flatten()
+  
+  # Shuffle step
+  keys = names(res_map) %>% unique()
+  res_shuf = lapply(keys, function(key) unlist(res_map[names(res_map) == key]) %>% setNames(NULL)) %>% setNames(keys)
+  
+  # Reduce step
+  reduce_func = sum
+  res_red = lapply(res_shuf, reduce_func)
+  
+  tbl = data_frame(keys = names(res_red), 
+             values = unlist(res_red)) %>% 
+             arrange(desc(values))
+  
+  tbl1 = tbl
+  index = c()
+  for(i in 1:nrow(tbl1[,1]))
+  {
+    if(nchar(tbl1[i,1][[1]])==1)
+    {
+      index = c(index, i)
+    }
+  }
+  tbl1 = tbl1[-index,]
+  
+  tbl2 = tbl1 %>% arrange(desc(values))
+}
+```
+
+
+## Displaying
+
+```{r}
+
+
+```
+
+
+## Shiny
+
+```{r}
 
 
 ```
