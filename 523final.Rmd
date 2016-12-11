@@ -15,9 +15,10 @@ library(stringr)
 library(dplyr)
 library(tm)
 
-textmining = function(file)
-{
-  # testing file : "/data/Shakespeare/hamlet.txt"
+#textmining = function(file)
+#{
+  # testing file : 
+  # file = "/data/Shakespeare/hamlet.txt"
   data = readLines(file) %>% as.list()
   
   # Map step
@@ -67,8 +68,9 @@ textmining = function(file)
   tbl1 = tbl1[-index,]
   
   tbl2 = tbl1 %>% arrange(desc(values))
-  return(tbl2)
-}
+  write.table(tbl2,"textmining.txt",sep="\t",row.names=FALSE)
+#  return(tbl2)
+#}
 ```
 
 
