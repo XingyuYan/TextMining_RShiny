@@ -18,7 +18,7 @@ library(tm)
 #textmining = function(file)
 #{
   # testing file : 
-  # file = "/data/Shakespeare/hamlet.txt"
+   file = "/data/Shakespeare/hamlet.txt"
   data = readLines(file) %>% as.list()
   
   # Map step
@@ -79,6 +79,22 @@ library(tm)
 ```{r}
 
 
+## Plot.1 hist for most 50 freq
+library(ggplot2)
+df = tbl2[1:50,]
+names = as.matrix(tbl2[1:50,1],col = 1)
+freq = as.matrix(tbl2[1:50,2],col = 1)
+ggplot(df, aes(names,freq)) + 
+  geom_bar(stat="identity") + 
+  theme(axis.text.x=element_text(angle=45, hjust=1))   
+
+
+## Plot.2 word_cloud
+library(wordcloud)
+max_words = 150  #if want the most 150 freq words, user can choose this value themselves in shiny
+namesW = as.matrix(tbl2[,1],col = 1)
+freqW = as.matrix(tbl2[,2],col = 1)
+wordcloud(names,freq,max.words = max_words,scale=c(5, .1), colors=brewer.pal(6, "Dark2")) 
 ```
 
 
