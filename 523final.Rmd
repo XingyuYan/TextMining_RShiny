@@ -18,30 +18,39 @@ library(tm)
 #textmining = function(file)
 #{
   # testing file : 
-   file = "/data/Shakespeare/hamlet.txt"
+  
+  #file = "/data/Shakespeare/hamlet.txt"
+  
+  file =  "/Users/mueric35/Desktop/texts/texts.txt"
   data = readLines(file) %>% as.list()
   
   # Map step
-  map_count_words = function(val)
+  clean_text = function(val)
   {
-    stopifnot(length(val) == 1)
-    
     # delete punctuations and numbers
     val = gsub("[[:punct:]]", " ", val)
     val = gsub("[[:digit:]]+", " ", val)
     # clean it up
-    val %>%
+    a =  val %>%
       tolower() %>%
-      str_split(" ") %>%
-      {.[[1]]} %>%
-      str_trim() %>%
-      .[. != ""] %>%
-      .[! . %in% stopwords("en")] %>%
-      table() %>% 
-      as.list()
+      str_split(" ") 
+    
+    a = lapply(a,function(x) x[x  != "" & ! x %in% stopwords("en")])
+    a = lapply(a, function(x) paste(x,collapse = " "))
+    a = a[-which(a == "")]
+   return(a)
   }
   
-  res_map = lapply(data, map_count_words) %>% flatten()
+  map_count_words = function(val){
+    val = val %>%
+      str_split(" ") %>%
+      table() %>% 
+      as.list()
+    return(val)
+  }
+  
+  a = clean_text(data)
+  res_map = lapply(a, map_count_words) %>% flatten()
   
   # Shuffle step
   keys = names(res_map) %>% unique()
@@ -70,6 +79,9 @@ library(tm)
   tbl2 = tbl1 %>% arrange(desc(values))
   write.table(tbl2,"textmining.txt",sep="\t",row.names=FALSE)
 #  return(tbl2)
+  
+  
+  
 #}
 ```
 
@@ -95,6 +107,62 @@ max_words = 150  #if want the most 150 freq words, user can choose this value th
 namesW = as.matrix(tbl2[,1],col = 1)
 freqW = as.matrix(tbl2[,2],col = 1)
 wordcloud(names,freq,max.words = max_words,scale=c(5, .1), colors=brewer.pal(6, "Dark2")) 
+
+
+# In many cases, words need to be stemmed to retrieve their radicals. For instance, "example" and "examples" are both stemmed to "exampl". However, after that, one may want to complete the stems to their original forms, so that the words would look "normal".
+  text <- Corpus(VectorSource(a))
+  text <- tm_map(text, removeWords, stopwords("english"))
+  library(SnowballC)   
+  text = tm_map(text,stemDocument)  
+  text <- tm_map(text, stripWhitespace) 
+  text <- tm_map(text, PlainTextDocument) 
+
+  myDtm <- TermDocumentMatrix(text, control = list(minWordLength = 1))
+  
+  # shiny output: 
+  findFreqTerms(myDtm,lowfreq = 10)
+  
+  #  shiny output: association table
+  findAssocs(myDtm,"die",0.8)
+  
+  ## Plot.3 
+
+  library(cluster)   
+dtmss <- removeSparseTerms(myDtm, 0.9) # This makes a matrix that is only 15% empty space, maximum.   
+d <- dist((dtmss), method="euclidian")
+fit <- hclust(d=d, method="ward.D")   
+plot(fit, hang=-1)   
+
+rect.hclust(fit, k=5, border="red") # draw dendogram with red borders around the 5 clusters   
+
+groups <- cutree(fit, k=5)   # "k=" defines the number of clusters you are using   
+
+# plot 4
+kfit <- kmeans(d, 5)   
+clusplot(as.matrix(d), kfit$cluster, color=T, shade=T, labels=2, lines=0)
+
+# 
+dtmss <- removeSparseTerms(myDtm, 0.9)   
+
+library(igraph)
+termDocMatrix <- as.matrix(dtmss)
+termDocMatrix[termDocMatrix>=1] <- 1
+termMatrix <- termDocMatrix %*% t(termDocMatrix)
+g <- graph.adjacency(termMatrix, weighted=T, mode = "undirected")
+V(g)$label <- V(g)$name
+V(g)$degree <- degree(g)
+# remove loops
+g <- simplify(g)
+V(g)$label.cex <- log(rank(V(g)$degree)) + 1
+V(g)$label.color <- rgb(0, 0, .2, .8)
+V(g)$frame.color <- NA
+egam <- (log(E(g)$weight)+.4) / max(log(E(g)$weight)+.4)
+E(g)$color <- rgb(.5, .5, 0, egam)
+E(g)$width <- egam*2
+# plot the graph in layout1
+
+plot(g)
+
 ```
 
 
