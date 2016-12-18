@@ -14,7 +14,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Text mining
 
-The text mining part is to input the file, to clean it up and to output a table where each word and its appearing frequency are listed. The cleaning method is using both stringr and gsub, where we get rid of all punctuations, numbers, and simple letters. Besides, as we don't want the stop words, such as "I", "and", and "the", we delete them as well. At the end, we output a dataframe which contains two columns: keys and values.
+The text mining part is to input the file, to clean it up and to output a table where each word and its appearing frequency are listed. The cleaning method is using both stringr and gsub, where we get rid of all punctuations, numbers, simple letters, and small words which have less than four letters in it. Besides, as we don't want the stop words, such as "I", "and", and "the", we delete them as well. At the end, we output a dataframe which contains two columns: keys and values.
 
 ```{r}
 # load packages
