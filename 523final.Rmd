@@ -1,14 +1,22 @@
 ---
-title: "523Final"
-author: Group 9
+title: "Final Project"
+author: Text Miner - Group 9
 output: html_document
 ---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# install necessary packages
+#install.packages("wordcloud")
+
+```
 
 ## Text mining
 
 The text mining part is to input the file, to clean it up and to output a table where each word and its appearing frequency are listed. The cleaning method is using both stringr and gsub, where we get rid of all punctuations, numbers, and simple letters. Besides, as we don't want the stop words, such as "I", "and", and "the", we delete them as well. At the end, we output a dataframe which contains two columns: keys and values.
 
 ```{r}
+# load packages
 library(purrr)
 library(magrittr)
 library(stringr)
@@ -19,9 +27,9 @@ library(tm)
 #{
   # testing file : 
   
-  #file = "/data/Shakespeare/hamlet.txt"
+  file = "/data/Shakespeare/hamlet.txt"
   
-  file =  "/Users/mueric35/Desktop/texts/texts.txt"
+  #file =  "/Users/mueric35/Desktop/texts/texts.txt"
   data = readLines(file) %>% as.list()
   
   # Map step
@@ -77,7 +85,11 @@ library(tm)
   tbl1 = tbl1[-index,]
   
   tbl2 = tbl1 %>% arrange(desc(values))
-  write.table(tbl2,"textmining.txt",sep="\t",row.names=FALSE)
+  
+  # save data frame as RData 
+  save(tbl2, file = "textmining.RData")
+  
+#  write.table(tbl2,"textmining.txt",sep="\t",row.names=FALSE)
 #  return(tbl2)
   
   
@@ -89,25 +101,29 @@ library(tm)
 ## Displaying
 
 ```{r}
-
-
-## Plot.1 hist for most 50 freq
+## Figure 1. Histogram for most 30 freq
 library(ggplot2)
-df = tbl2[1:50,]
-names = as.matrix(tbl2[1:50,1],col = 1)
-freq = as.matrix(tbl2[1:50,2],col = 1)
-ggplot(df, aes(names,freq)) + 
+# filter top 30 
+n = 30 # user-defined 
+df = tbl2 %>%
+  slice(1:30)
+# histogram
+ggplot(df, aes(reorder(keys, -values), values)) + 
   geom_bar(stat="identity") + 
-  theme(axis.text.x=element_text(angle=45, hjust=1))   
+  theme_minimal() + xlab("") +
+  theme(axis.text.x=element_text(angle=45, hjust=1)) 
+ 
 
 
-## Plot.2 word_cloud
+## Figure 2. Word Cloud
 library(wordcloud)
-max_words = 150  #if want the most 150 freq words, user can choose this value themselves in shiny
-namesW = as.matrix(tbl2[,1],col = 1)
-freqW = as.matrix(tbl2[,2],col = 1)
-wordcloud(names,freq,max.words = max_words,scale=c(5, .1), colors=brewer.pal(6, "Dark2")) 
+# we use the most 150 freq words
+# user can choose this value themselves in shiny
+max_words = 150  
 
+wordcloud(df$keys, df$values, 
+          max.words = max_words,scale=c(5, .1), 
+          colors=brewer.pal(6, "Dark2"))
 
 # In many cases, words need to be stemmed to retrieve their radicals. For instance, "example" and "examples" are both stemmed to "exampl". However, after that, one may want to complete the stems to their original forms, so that the words would look "normal".
   text <- Corpus(VectorSource(a))
