@@ -14,7 +14,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Text mining
 
-The text mining part is to input the file, to clean it up and to output a table where each word and its appearing frequency are listed. The cleaning method is using both stringr and gsub, where we get rid of all punctuations, numbers, and simple letters. Besides, as we don't want the stop words, such as "I", "and", and "the", we delete them as well. At the end, we output a dataframe which contains two columns: keys and values.
+The text mining part is to input the file, to clean it up and to output a table where each word and its appearing frequency are listed. The cleaning method is using both stringr and gsub, where we get rid of all punctuations, numbers, simple letters, and small words which have less than four letters in it. Besides, as we don't want the stop words, such as "I", "and", and "the", we delete them as well. At the end, we output a dataframe which contains two columns: keys and values.
 
 ```{r}
 # load packages
@@ -23,15 +23,10 @@ library(magrittr)
 library(stringr)
 library(dplyr)
 library(tm)
+library(SnowballC)   
 
-#textmining = function(file)
-#{
-  # testing file : 
-  
-  file = "/data/Shakespeare/hamlet.txt"
-  
-  #file =  "/Users/mueric35/Desktop/texts/texts.txt"
-  data = readLines(file) %>% as.list()
+
+  data = readLines("texts.txt") %>% as.list()
   
   # Map step
   clean_text = function(val)
@@ -40,144 +35,102 @@ library(tm)
     val = gsub("[[:punct:]]", " ", val)
     val = gsub("[[:digit:]]+", " ", val)
     # clean it up
-    a =  val %>%
+    clean_a =  val %>%
       tolower() %>%
       str_split(" ") 
     
-    a = lapply(a,function(x) x[x  != "" & ! x %in% stopwords("en")])
-    a = lapply(a, function(x) paste(x,collapse = " "))
-    a = a[-which(a == "")]
-   return(a)
-  }
-  
-  map_count_words = function(val){
-    val = val %>%
-      str_split(" ") %>%
-      table() %>% 
-      as.list()
-    return(val)
+    clean_a = lapply(clean_a,function(x) x[x  != "" & ! x %in% stopwords("en")])
+    clean_a = lapply(clean_a,delete_single)
+    clean_a = lapply(clean_a, function(x) paste(x,collapse = " "))
+    clean_a = clean_a[-which(clean_a == "")]
+   return(clean_a)
   }
   
   a = clean_text(data)
-  res_map = lapply(a, map_count_words) %>% flatten()
   
-  # Shuffle step
-  keys = names(res_map) %>% unique()
-  res_shuf = lapply(keys, function(key) unlist(res_map[names(res_map) == key]) %>% setNames(NULL)) %>% setNames(keys)
+   #In many cases, words need to be stemmed to retrieve their radicals. For instance, "example" and "examples" are both stemmed to "exampl". However, after that, one may want to complete the stems to their original forms, so that the words would look "normal".
+  text = Corpus(VectorSource(a))
+  text = tm_map(text, removeWords, stopwords("english"))
+  text = tm_map(text,stemDocument)  
+  text = tm_map(text, stripWhitespace) 
+  text = tm_map(text, PlainTextDocument) 
+  myDtm = TermDocumentMatrix(text, control = list(minWordLength = 1))
   
-  # Reduce step
-  reduce_func = sum
-  res_red = lapply(res_shuf, reduce_func)
-  
-  tbl = data_frame(keys = names(res_red), 
-             values = unlist(res_red)) %>% 
-             arrange(desc(values))
-  
-  # delete the single letters
-  tbl1 = tbl
-  index = c()
-  for(i in 1:nrow(tbl1[,1]))
-  {
-    if(nchar(tbl1[i,1][[1]])==1)
-    {
-      index = c(index, i)
-    }
-  }
-  tbl1 = tbl1[-index,]
-  
-  tb = tbl1 %>% arrange(desc(values))
-  
-  # save data frame as RData 
-  save(tb, file = "textmining.RData")
-  
-#  write.table(tb,"textmining.txt",sep="\t",row.names=FALSE)
-#  return(tb)
-  
-  
-  
-#}
+
 ```
 
 ## Displaying
 
 ```{r}
-## Figure 1. Histogram for most 30 freq
-library(ggplot2)
-# filter top 30 
-n = 30 # user-defined 
 
-tb %>%
-  slice(1:n) %>%
-  ggplot(aes(reorder(keys, -values), values)) + 
-  geom_bar(stat="identity") + 
-  theme_minimal() + xlab("") +
-  theme(axis.text.x=element_text(angle=45, hjust=1)) 
- 
+#
 
-## Figure 2. Word Cloud
-library(wordcloud)
-# we use the most 150 freq words
-# user can choose this value themselves in shiny
-max_words = 150  
-
-wordcloud(tb$keys, tb$values, 
-          max.words = max_words,scale=c(5, .1), 
-          colors=brewer.pal(6, "Dark2"))
-
-wordcloud(tb$keys, tb$values, min.freq = 25)  
-
-# In many cases, words need to be stemmed to retrieve their radicals. For instance, "example" and "examples" are both stemmed to "exampl". However, after that, one may want to complete the stems to their original forms, so that the words would look "normal".
-  text <- Corpus(VectorSource(a))
-  text <- tm_map(text, removeWords, stopwords("english"))
-  library(SnowballC)   
-  text = tm_map(text,stemDocument)  
-  text <- tm_map(text, stripWhitespace) 
-  text <- tm_map(text, PlainTextDocument) 
-
-  myDtm <- TermDocumentMatrix(text, control = list(minWordLength = 1))
+  # find frequency: 
+  freq = colSums(t(as.matrix(myDtm)))
+  # order   
+  ord = rev(order(freq))
   
-  # shiny output: 
-  findFreqTerms(myDtm,lowfreq = 10)
+  # top n freq word 
+  n = 10
+  freq[ord[1:n]]
+
+  # output df
+  wf = data.frame(word=names(freq), freq=freq) 
+  wf = wf %>% group_by(word) %>% arrange(desc(freq))
   
-  #  shiny output: association table
-  findAssocs(myDtm,"die",0.8)
+  library(ggplot2)
   
-## Figure 3 
-library(cluster)   
-dtmss <- removeSparseTerms(myDtm, 0.9) # This makes a matrix that is only 15% empty space, maximum.   
-d <- dist((dtmss), method="euclidian")
-fit <- hclust(d=d, method="ward.D")   
-plot(fit, hang=-1)   
+  #The n used most word histogram
+  
+  n = 10
+  hist_data = wf[1:n,]
+  ggplot(hist_data, aes(word, freq))+
+    geom_bar(stat="identity") +
+    theme(axis.text.x=element_text(angle=45, hjust=1)) +
+    theme_minimal() + 
+    ylab("Frequency") +
+    xlab("")
+     
 
-rect.hclust(fit, k=5, border="red") # draw dendogram with red borders around the 5 clusters   
+  # the n most used word 
+  n = 100
+  wordcloud(names(freq), freq, max.words=100, rot.per=0.2, 
+          colors=brewer.pal(6, "Dark2") )   
 
-groups <- cutree(fit, k=5)   # "k=" defines the number of clusters you are using   
-
-## Figure 4
-kfit <- kmeans(d, 5)   
-clusplot(as.matrix(d), kfit$cluster, color=T, shade=T, labels=2, lines=0)
-
-# 
-dtmss <- removeSparseTerms(myDtm, 0.9)   
-
-library(igraph)
-termDocMatrix <- as.matrix(dtmss)
-termDocMatrix[termDocMatrix>=1] <- 1
-termMatrix <- termDocMatrix %*% t(termDocMatrix)
-g <- graph.adjacency(termMatrix, weighted=T, mode = "undirected")
-V(g)$label <- V(g)$name
-V(g)$degree <- degree(g)
-# remove loops
-g <- simplify(g)
-V(g)$label.cex <- log(rank(V(g)$degree)) + 1
-V(g)$label.color <- rgb(0, 0, .2, .8)
-V(g)$frame.color <- NA
-egam <- (log(E(g)$weight)+.4) / max(log(E(g)$weight)+.4)
-E(g)$color <- rgb(.5, .5, 0, egam)
-E(g)$width <- egam*2
-# plot the graph in layout1
-
-plot(g)
+  ## Figure 3 
+  library(cluster)   
+  # remove sparse terms
+  dtmss = removeSparseTerms(myDtm, 0.9) 
+  d = dist((dtmss), method="euclidian")
+  fit = hclust(d=d, method="ward.D")   
+  plot(fit, hang=-1)   
+  
+  rect.hclust(fit, k=5, border="red") # draw dendogram with red borders around the 5 clusters   
+  groups = cutree(fit, k=5)   # "k=" defines the number of clusters you are using   
+  
+  ## Figure 4
+  kfit = kmeans(d, 5)   
+  clusplot(as.matrix(d), kfit$cluster, color=T, shade=T, labels=2, lines=0)
+  
+  # figure 5
+  library(igraph)
+  termDocMatrix = as.matrix(dtmss)
+  termDocMatrix[termDocMatrix>=1] = 1
+  termMatrix = termDocMatrix %*% t(termDocMatrix)
+  g = graph.adjacency(termMatrix, weighted=T, mode = "undirected")
+  V(g)$label = V(g)$name
+  V(g)$degree = degree(g)
+  # remove loops
+  g = simplify(g)
+  V(g)$label.cex = log(rank(V(g)$degree)) + 1
+  V(g)$label.color = rgb(0, 0, .2, .8)
+  V(g)$frame.color = NA
+  egam = (log(E(g)$weight)+.4) / max(log(E(g)$weight)+.4)
+  E(g)$color = rgb(.5, .5, 0, egam)
+  E(g)$width = egam*2
+  # plot the graph in layout1
+  
+  plot(g)
 
 ```
 
