@@ -17,13 +17,13 @@ knitr::opts_chunk$set(echo = TRUE)
 The text mining part is to input the file, to clean it up and to output a table where each word and its appearing frequency are listed. The cleaning method is using both stringr and gsub, where we get rid of all punctuations, numbers, simple letters, and small words which have less than four letters in it. Besides, as we don't want the stop words, such as "I", "and", and "the", we delete them as well. At the end, we output a dataframe which contains two columns: keys and values.
 
 ```{r}
-# load packages
-library(purrr)
-library(magrittr)
-library(stringr)
-library(dplyr)
-library(tm)
-library(SnowballC)   
+  # load packages
+  library(purrr)
+  library(magrittr)
+  library(stringr)
+  library(dplyr)
+  library(tm)
+  library(SnowballC)   
 
 
   data = readLines("texts.txt") %>% as.list()
@@ -38,6 +38,13 @@ library(SnowballC)
     clean_a =  val %>%
       tolower() %>%
       str_split(" ") 
+    
+    delete_single = function(x){
+      if(length(x) != 1){
+        x = x[-which(sapply(x,nchar) == 1)]
+      }
+      return(x)
+    }
     
     clean_a = lapply(clean_a,function(x) x[x  != "" & ! x %in% stopwords("en")])
     clean_a = lapply(clean_a,delete_single)
