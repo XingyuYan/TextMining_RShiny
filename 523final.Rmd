@@ -27,11 +27,11 @@ library(tm)
 library(SnowballC)
 library(knitr)
 
-
-  data = readLines("texts.txt") %>% as.list()
+file = "texts.txt"
+data = readLines(file) %>% as.list()
   
-  # Map step
-  clean_text = function(val)
+# clean data 
+clean_text = function(val)
   {
     # delete punctuations and numbers
     val = gsub("[[:punct:]]", " ", val)
@@ -52,38 +52,42 @@ library(knitr)
     clean_a = lapply(clean_a,delete_single)
     clean_a = lapply(clean_a, function(x) paste(x,collapse = " "))
     clean_a = clean_a[-which(clean_a == "")]
-   return(clean_a)
+    
+    return(clean_a)
   }
   
-  a = clean_text(data)
+data = clean_text(data)
   
-   #In many cases, words need to be stemmed to retrieve their radicals. For instance, "example" and "examples" are both stemmed to "exampl". However, after that, one may want to complete the stems to their original forms, so that the words would look "normal".
-  text = Corpus(VectorSource(a))
+#In many cases, words need to be stemmed to retrieve their radicals. For instance, "example" and "examples" are both stemmed to "exampl". However, after that, one may want to complete the stems to their original forms, so that the words would look "normal".
+stem = function(val){
+  text = Corpus(VectorSource(val))
   text = tm_map(text, removeWords, stopwords("english"))
   text = tm_map(text,stemDocument)  
   text = tm_map(text, stripWhitespace) 
   text = tm_map(text, PlainTextDocument) 
-  myDtm = TermDocumentMatrix(text, control = list(minWordLength = 1))
-   
-  # find frequency: 
-  freq = colSums(t(as.matrix(myDtm)))
+  TermDocumentMatrix(text, control = list(minWordLength = 1))
+}
+
+myDtm = stem(data)
+
+# compute frequency and output data frame
+freq_table = function(val){
+  # find frequency:
+  freq = colSums(t(as.matrix(val)))
   # order   
   ord = rev(order(freq))
   
-  # top n freq word 
-  n = 10
-  freq[ord[1:n]]
-
   # output df
-  wf = data.frame(word=names(freq), freq=freq) 
-  wf = wf %>%
+  data_frame(word=names(freq), freq=freq) %>%
     group_by(word) %>% 
     arrange(desc(freq))
   
-  # print table
-  wf %>%
+}
+  
+df = freq_table(myDtm)
+# print table
+df %>%
     kable(caption = "Frequency Table")
-
 ```
 
 ## Displaying
@@ -91,24 +95,23 @@ library(knitr)
 ```{r}
 
   library(ggplot2)
-  
+  ## Figure 1. Barplot
   #The n used most word histogram
   n = 10
-  hist_data = wf[1:n,]
-  ggplot(hist_data, aes(word, freq))+
+  hist_data = df[1:n,]
+  ggplot(hist_data, aes(reorder(word, -freq), freq))+
     geom_bar(stat="identity") +
     theme(axis.text.x=element_text(angle=45, hjust=1)) +
     theme_minimal() + 
-    ylab("Frequency") +
-    xlab("")
+    ylab("Frequency") + xlab("")
      
-
+  ## Figure 2. Word Clound
   # the n most used word 
-  n = 10
-  wordcloud(names(freq), freq, max.words=100, rot.per=0.2, 
-          colors=brewer.pal(6, "Dark2") )   
+  max.words= 100
+  wordcloud(df$word, df$freq, max.words=max.words, rot.per=0.2, 
+          colors=brewer.pal(6, "Dark2") )
 
-  ## Figure 3 
+  ## Figure 3. Hierarchical Clustering
   library(cluster)   
   # remove sparse terms
   Sparse = 0.83
@@ -150,6 +153,130 @@ library(knitr)
 
 ```{r}
 #library(shiny)
+shinyApp(
+  ui = fluidPage(
+      titlePanel("Text Miner"),
+      
+      hr(),
+      
+      sidebarPanel(
+      # select how to upload a file
+      radioButtons(inputId="choice", label=h3("Source"), 
+                   choices=c("Select File" = "browse",
+                             "Enter Text" = "input")),
+      
+      conditionalPanel(
+        condition = "input.choice == 'browse'",
+        fileInput("file", label = "")
+      ),
+      
+      conditionalPanel(
+        condition = "input.choice == 'input'",
+        textInput("text", label = ""))
+    ),
+    
+    mainPanel(
+      h4("Histogram"),
+      # return plot
+      plotOutput("plot1"),
+  
+      
+      fluidRow(
+        splitLayout(cellWidths = c("50%", "50%"), 
+                h4("Word Cloud"),
+                plotOutput("plot2"), 
+                h4("Hierarchical Agglomerative Clustering"),
+                plotOutput("plot3"))
+        ),
 
+      fluidRow(
+        splitLayout(cellWidths = c("50%", "50%"), 
+                    h4("KMeans"),
+                    plotOutput("plot4"), 
+                    h4("Neural Network"),
+                    plotOutput("plot5"))
+      )
+    )
+   ),
+  
+  server = function(input, output, session) {
+    
+    file = reactive(input$file)
+    
+    data = reactive({
+      if (!is.null(file())){
+        readLines(file()$name) %>% as.list()
+        }
+    })
+    
+    myDtm = reactive({
+      clean_data = clean_text(data())
+      stem(clean_data)
+    })
+
+    df = reactive({
+      freq_table(myDtm())
+    })
+    
+    output$plot1 = renderPlot({
+      n = 10
+      hist_data = df()[1:n,]
+      ggplot(hist_data, aes(reorder(word, -freq), freq))+
+        geom_bar(stat="identity") +
+        theme(axis.text.x=element_text(angle=45, hjust=1)) +
+        theme_minimal() + 
+        ylab("Frequency") + xlab("")
+    })
+    
+    output$plot2 = renderPlot({
+      max.words= 100
+      wordcloud(df()$word, df()$freq, 
+            max.words = max.words, 
+            colors = brewer.pal(6, "Dark2") )
+      })
+    
+    dtmss = reactive({
+      Sparse = 0.83
+      removeSparseTerms(myDtm(), Sparse)       
+    })
+
+    d = reactive(dist((dtmss()), method = "euclidian"))
+      
+    fit = reactive(hclust(d = d(), method = "ward.D"))
+    
+    output$plot3 = renderPlot({
+      # remove sparse terms
+      plot(fit(), hang=-1)
+      rect.hclust(fit(), k=5, border="red") # draw dendogram with red borders around the 5 clusters   
+      groups = cutree(fit(), k=5)   # "k=" defines the number of clusters you are using 
+    })
+
+     output$plot4 = renderPlot({
+         kfit = kmeans(d(), 5)   
+         clusplot(as.matrix(d()), kfit$cluster, 
+                  color=T, shade=T, labels=2, lines=0)
+     })
+     
+     output$plot5  = renderPlot({
+         termDocMatrix = as.matrix(dtmss())
+         termDocMatrix[termDocMatrix>=1] = 1
+         termMatrix = termDocMatrix %*% t(termDocMatrix)
+         g = graph.adjacency(termMatrix, weighted=T, mode = "undirected")
+         V(g)$label = V(g)$name
+         V(g)$degree = degree(g)
+         # remove loops
+         g = simplify(g)
+         V(g)$label.cex = log(rank(V(g)$degree)) + 1
+         V(g)$label.color = rgb(0, 0, .2, .8)
+         V(g)$frame.color = NA
+         egam = (log(E(g)$weight)+.4) / max(log(E(g)$weight)+.4)
+         E(g)$color = rgb(.5, .5, 0, egam)
+         E(g)$width = egam*2
+         plot(g)
+     })
+
+
+  }
+)
 
 ```
