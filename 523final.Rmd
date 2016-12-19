@@ -19,7 +19,7 @@ In this Final project, we aim to use our knowledge of `text mining, map reduce, 
 
 
 
-### Text mining *write_up*
+### Part1. Text mining *write_up*
 The text mining part is to input the file, to clean it up and to output a table where each word and its appearing frequency are listed. The cleaning method is using `stringr` and `gsub`, and `tm_map` where we get rid of all punctuations, numbers, simple letters, and small words which have less than four letters in it. Besides, as we don't want the stop words, such as "I", "and", and "the", we delete them as well. At the end, we output a dataframe which contains two columns: words and frequency.
 
 
@@ -97,8 +97,8 @@ df %>%
     kable(caption = "Frequency Table")
 ```
 
-### Displaying *write_up*
-In this part, we plot 4 graphs to display different kinds of information we gathered in the text file input by user. We first visualize the word-frequency table we get in part 1 using ggplot. Then we require wordcloud library and display word frequency in the form of wordcloud with different size and color to show different levels of frequency. Users can also choose how many words they want in the wordcloud. Figure 3 is about Hierarchical Clustering, which shows 
+### Part2. Displaying *write_up*
+In this part, we plot 5 graphs to display different kinds of information we gathered in the text file input by user. We first visualize the word-frequency table we get in part 1 using ggplot. Then we require wordcloud library and display word frequency in the form of wordcloud with different size and color to show different levels of frequency. Users can also choose how many words they want in the wordcloud. Figure 3 is about Hierarchical Clustering, which shows the hierachical relationships between some of the representative words. We plot Figure 4 by first calculating distance between words & then clustering them according to similarity. The k-means clustering attempts to cluster words into a specified number of groups. 
 
 ```{r}
 
@@ -168,6 +168,10 @@ shinyApp(
       hr(),
       
       sidebarPanel(
+        
+      selectInput("inputs", "Inputs:",
+              c("browse" = "brw",
+                "pastes" = "paste")),
       # select how to upload a file
       radioButtons(inputId="choice", label=h3("Source"), 
                    choices=c("Select File" = "browse",
