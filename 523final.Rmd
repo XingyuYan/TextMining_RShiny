@@ -51,7 +51,7 @@ clean_text = function(val)
     clean_a = lapply(clean_a,function(x) x[x  != "" & ! x %in% stopwords("en")])
     clean_a = lapply(clean_a,delete_single)
     clean_a = lapply(clean_a, function(x) paste(x,collapse = " "))
-    clean_a = clean_a[-which(clean_a == "")]
+    clean_a = clean_a[clean_a != ""]
     
     return(clean_a)
   }
@@ -107,6 +107,7 @@ df %>%
      
   ## Figure 2. Word Clound
   # the n most used word 
+  library(wordcloud)
   max.words= 100
   wordcloud(df$word, df$freq, max.words=max.words, rot.per=0.2, 
           colors=brewer.pal(6, "Dark2") )
@@ -116,16 +117,20 @@ df %>%
   # remove sparse terms
   Sparse = 0.83
   dtmss = removeSparseTerms(myDtm, Sparse) 
-  d = dist((dtmss), method="euclidian")
-  fit = hclust(d=d, method="ward.D")   
-  plot(fit, hang=-1)   
+  d = dist((dtmss), method = "euclidian")
+  fit = hclust(d = d, method = "ward.D")
+  
+  plot(fit, hang=-1, 
+       xlab = "", sub ="")   
   
   rect.hclust(fit, k=5, border="red") # draw dendogram with red borders around the 5 clusters   
   groups = cutree(fit, k=5)   # "k=" defines the number of clusters you are using   
   
   ## Figure 4
   kfit = kmeans(d, 5)   
-  clusplot(as.matrix(d), kfit$cluster, color=T, shade=T, labels=2, lines=0)
+  clusplot(as.matrix(d), kfit$cluster, 
+           color=T, shade=T, labels=2, lines=0,
+           main = "")
   
   # figure 5
   library(igraph)
@@ -152,7 +157,10 @@ df %>%
 ## Shiny
 
 ```{r}
-#library(shiny)
+# load packages
+# library(shiny)
+
+# call shiny app
 shinyApp(
   ui = fluidPage(
       titlePanel("Text Miner"),
@@ -160,41 +168,53 @@ shinyApp(
       hr(),
       
       sidebarPanel(
-      # select how to upload a file
+      # select how to give a file
       radioButtons(inputId="choice", label=h3("Source"), 
                    choices=c("Select File" = "browse",
-                             "Enter Text" = "input")),
+                             "Enter Text" = "input"),
+                   selected = "input"),
       
+      # upload file from local computer
       conditionalPanel(
         condition = "input.choice == 'browse'",
-        fileInput("file", label = "")
+        fileInput("file", label = "", multiple = FALSE),
+        
+        # add a reset button 
+        actionButton("reset", "Reset File")
       ),
       
+       # reset fileInput 
+       tags$script('
+               Shiny.addCustomMessageHandler("resetFileInputHandler", function(x) {      
+
+               var id = "#" + x + "_progress";
+
+               var idBar = id + " .bar";
+
+               $(id).css("visibility", "hidden");
+
+               $(idBar).css("width", "0%");
+
+                 });
+
+              '),
+      
+      # enter text 
       conditionalPanel(
         condition = "input.choice == 'input'",
-        textInput("text", label = ""))
+        textInput("text", label = "", value = "Enter your text here!"))
     ),
     
     mainPanel(
-      h4("Histogram"),
-      # return plot
-      plotOutput("plot1"),
-  
       
-      fluidRow(
-        splitLayout(cellWidths = c("50%", "50%"), 
-                h4("Word Cloud"),
-                plotOutput("plot2"), 
-                h4("Hierarchical Agglomerative Clustering"),
-                plotOutput("plot3"))
-        ),
-
-      fluidRow(
-        splitLayout(cellWidths = c("50%", "50%"), 
-                    h4("KMeans"),
-                    plotOutput("plot4"), 
-                    h4("Neural Network"),
-                    plotOutput("plot5"))
+      # show plots 
+      tabsetPanel(
+        tabPanel("Text", verbatimTextOutput("value")),
+        tabPanel("Histogram", plotOutput("plot1")), 
+        tabPanel("Word Cloud", plotOutput("plot2")), 
+        tabPanel("Hierarchical Clustering", plotOutput("plot3")),
+        tabPanel("KMeans", plotOutput("plot4")),
+        tabPanel("Neural Network", plotOutput("plot5"))
       )
     )
    ),
@@ -204,7 +224,9 @@ shinyApp(
     file = reactive(input$file)
     
     data = reactive({
-      if (!is.null(file())){
+      if (is.null(file())){
+        input$text %>% as.list()
+        }else{
         readLines(file()$name) %>% as.list()
         }
     })
@@ -217,6 +239,10 @@ shinyApp(
     df = reactive({
       freq_table(myDtm())
     })
+    
+    output$value = renderPrint(
+      c(df())$word
+    )
     
     output$plot1 = renderPlot({
       n = 10
@@ -246,14 +272,14 @@ shinyApp(
     
     output$plot3 = renderPlot({
       # remove sparse terms
-      plot(fit(), hang=-1)
+      plot(fit(), hang=-1, xlab = "", sub ="")
       rect.hclust(fit(), k=5, border="red") # draw dendogram with red borders around the 5 clusters   
       groups = cutree(fit(), k=5)   # "k=" defines the number of clusters you are using 
     })
 
      output$plot4 = renderPlot({
          kfit = kmeans(d(), 5)   
-         clusplot(as.matrix(d()), kfit$cluster, 
+         clusplot(as.matrix(d()), kfit$cluster, main = "",
                   color=T, shade=T, labels=2, lines=0)
      })
      
@@ -274,6 +300,13 @@ shinyApp(
          E(g)$width = egam*2
          plot(g)
      })
+     
+     observe({
+       input$reset
+       session$sendCustomMessage(type = "resetFileInputHandler", "file")   
+    })
+
+     
 
 
   }
