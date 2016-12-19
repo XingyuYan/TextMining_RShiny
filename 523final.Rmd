@@ -63,16 +63,7 @@ The text mining part is to input the file, to clean it up and to output a table 
   text = tm_map(text, stripWhitespace) 
   text = tm_map(text, PlainTextDocument) 
   myDtm = TermDocumentMatrix(text, control = list(minWordLength = 1))
-  
-
-```
-
-## Displaying
-
-```{r}
-
-#
-
+   
   # find frequency: 
   freq = colSums(t(as.matrix(myDtm)))
   # order   
@@ -86,10 +77,16 @@ The text mining part is to input the file, to clean it up and to output a table 
   wf = data.frame(word=names(freq), freq=freq) 
   wf = wf %>% group_by(word) %>% arrange(desc(freq))
   
+
+```
+
+## Displaying
+
+```{r}
+
   library(ggplot2)
   
   #The n used most word histogram
-  
   n = 10
   hist_data = wf[1:n,]
   ggplot(hist_data, aes(word, freq))+
@@ -101,7 +98,7 @@ The text mining part is to input the file, to clean it up and to output a table 
      
 
   # the n most used word 
-  n = 100
+  n = 10
   wordcloud(names(freq), freq, max.words=100, rot.per=0.2, 
           colors=brewer.pal(6, "Dark2") )   
 
@@ -136,8 +133,7 @@ The text mining part is to input the file, to clean it up and to output a table 
   egam = (log(E(g)$weight)+.4) / max(log(E(g)$weight)+.4)
   E(g)$color = rgb(.5, .5, 0, egam)
   E(g)$width = egam*2
-  # plot the graph in layout1
-  
+
   plot(g)
 
 ```
