@@ -168,7 +168,9 @@ This shiny app basically implements Part 1 and Part 2, but it allows users to up
 
 On the sidebar panel, users could upload a ".txt" file from their local environment. Then the original text that users selected will appear on the main panel. We apply a tabset panel on the main panel side. The tabset devides our output table and plots into multiple independently viewable sections, including frequency table, histogram, word cloud, hierarchical clustering, K-Means, and newwork. When users select certain sections, a sliderbar may appear so that they are able to change some parameters to customize the visualization. For frequency table and histogram, users could alter the number of the most frequent words. For hierarchical clustering and K-Means, users could change `sparsity` and `number of clusters`. (The larger the `sparsity`, the more words will remain for clustering.) 
 
-In general, this app will help users analyze their text rapidly and also provide them with customized plots.
+In general, this app will help users analyze their text rapidly and also provide them with customized plots. 
+
+The demo file could be downloaded from "https://www.dropbox.com/s/6slvodjrci9jkwb/texts.txt?dl=0". Users could download the text file and upload it in this Shiny App for demo.
 
 ```{r}
 # load packages
