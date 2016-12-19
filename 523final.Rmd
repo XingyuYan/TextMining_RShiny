@@ -111,7 +111,8 @@ library(knitr)
   ## Figure 3 
   library(cluster)   
   # remove sparse terms
-  dtmss = removeSparseTerms(myDtm, 0.9) 
+  Sparse = 0.83
+  dtmss = removeSparseTerms(myDtm, Sparse) 
   d = dist((dtmss), method="euclidian")
   fit = hclust(d=d, method="ward.D")   
   plot(fit, hang=-1)   
