@@ -185,6 +185,7 @@ plot(g)
 ## Shiny
 
 ```{r}
+#library(shiny)
 
 
 ```
