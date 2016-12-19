@@ -9,6 +9,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ## install necessary packages
 # install.packages("wordcloud")
 # install.packages("cluster")
+#install.packages("igraph")
 
 ```
 
