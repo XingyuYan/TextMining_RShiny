@@ -15,7 +15,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 
 ### Overall 
-In this Final project, we aim to use our knowledge of `text mining, map reduce, ggplot, shiny app, tm_map, and some machine learning algorithms and visulization` to build a small interactive app allowing users to input texts and get results of `word frequency, wordcloud, relationships between words and hierarchical agglomerative clustering`. The whole project was bulit up on 3 parts: text mining; displaying; shiny.
+In this Final project, we aim to use our knowledge of `text mining, ggplot, shiny app, tm_map, and some machine learning algorithms and visulization` to build a small interactive app allowing users to input texts and get results of `word frequency, wordcloud, relationships between words and hierarchical agglomerative clustering`. The whole project was bulit up on 3 parts: text mining; displaying; shiny.
 
 
 
