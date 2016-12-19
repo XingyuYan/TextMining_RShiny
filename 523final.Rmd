@@ -13,9 +13,16 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```
 
-## Text mining
 
-The text mining part is to input the file, to clean it up and to output a table where each word and its appearing frequency are listed. The cleaning method is using both stringr and gsub, where we get rid of all punctuations, numbers, simple letters, and small words which have less than four letters in it. Besides, as we don't want the stop words, such as "I", "and", and "the", we delete them as well. At the end, we output a dataframe which contains two columns: keys and values.
+### Overall *write_up*
+In this Final project, we aim to use our knowledge of `text mining, map reduce, ggplot, shiny app, tm_map, and some machine learning algorithms and visulization` to build a small interactive app allowing users to input texts and get results of `word frequency, wordcloud, relationships between words and hierarchical agglomerative clustering`. The whole project was bulit up on 3 parts: text mining; displaying; shiny.
+
+
+
+### Text mining *write_up*
+The text mining part is to input the file, to clean it up and to output a table where each word and its appearing frequency are listed. The cleaning method is using `stringr` and `gsub`, and `tm_map` where we get rid of all punctuations, numbers, simple letters, and small words which have less than four letters in it. Besides, as we don't want the stop words, such as "I", "and", and "the", we delete them as well. At the end, we output a dataframe which contains two columns: words and frequency.
+
+
 
 ```{r}
 # load packages
@@ -90,7 +97,8 @@ df %>%
     kable(caption = "Frequency Table")
 ```
 
-## Displaying
+### Displaying *write_up*
+In this part, we plot 4 graphs to display different kinds of information we gathered in the text file input by user. We first visualize the word-frequency table we get in part 1 using ggplot. Then we require wordcloud library and display word frequency in the form of wordcloud with different size and color to show different levels of frequency. Users can also choose how many words they want in the wordcloud. Figure 3 is about Hierarchical Clustering, which shows 
 
 ```{r}
 
@@ -106,7 +114,7 @@ df %>%
     ylab("Frequency") + xlab("")
      
   ## Figure 2. Word Clound
-  # the n most used word 
+  # choose how many words wanted in the wordcloud 
   max.words= 100
   wordcloud(df$word, df$freq, max.words=max.words, rot.per=0.2, 
           colors=brewer.pal(6, "Dark2") )
@@ -152,7 +160,7 @@ df %>%
 ## Shiny
 
 ```{r}
-#library(shiny)
+library(shiny)
 shinyApp(
   ui = fluidPage(
       titlePanel("Text Miner"),
